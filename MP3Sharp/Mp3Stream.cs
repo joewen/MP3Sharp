@@ -37,11 +37,7 @@ namespace MP3Sharp
         protected SoundFormat FormatRep;
         private int m_FrequencyRep = -1;
 
-        public bool IsEOF
-        {
-            get; 
-            protected set;
-		}
+        public bool IsEOF => m_SourceStream.Position == m_SourceStream.Length;
 
         /// <summary>
         ///     Creates a new stream instance using the provided filename, and the default chunk size of 4096 bytes.
@@ -74,15 +70,14 @@ namespace MP3Sharp
         /// </summary>
         public MP3Stream(Stream sourceStream, int chunkSize)
         {
-            IsEOF = false;
             FormatRep = SoundFormat.Pcm16BitStereo;
             m_SourceStream = sourceStream;
             m_BitStream = new Bitstream(new PushbackStream(m_SourceStream, chunkSize));
             m_Buffer = new Buffer16BitStereo();
             m_Decoder.OutputBuffer = m_Buffer;
+
             // read the first frame. This will fill the initial buffer with data, and get our frequency!
-            if (!ReadFrame())
-                IsEOF = true;
+            ReadFrame();
         }
         
         /// <summary>
@@ -231,9 +226,8 @@ namespace MP3Sharp
             {
                 if (m_Buffer.BytesLeft <= 0)
                 {
-                    if (!ReadFrame()) // out of frames or end of stream?
+                    if (IsEOF || !ReadFrame()) // out of frames or end of stream?
                     {
-                        IsEOF = true;
                         break;
                     }
                 }
